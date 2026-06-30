@@ -1,6 +1,11 @@
 FROM python:3.11-slim
 WORKDIR /app
 
+# 安装 PostgreSQL 客户端库（psycopg 依赖 libpq）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # 复制所有代码
 COPY . .
 
