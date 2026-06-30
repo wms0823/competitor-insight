@@ -1,13 +1,14 @@
 FROM python:3.11-slim
 WORKDIR /app
 
-# 先复制依赖文件并安装
-COPY pyproject.toml .
-COPY src/ src/
-RUN pip install -e .
+# 复制所有代码
+COPY . .
+
+# 安装依赖
+RUN pip install --no-cache-dir .
 
 # 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:$PORT/')" || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8080}/')" || exit 1
 
-CMD uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8080}
+CMD ["sh", "-c", "uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
