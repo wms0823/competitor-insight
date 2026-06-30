@@ -1,6 +1,11 @@
 FROM python:3.11-slim
 WORKDIR /app
 
+# 安装 psycopg 编译依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev gcc \
+    && rm -rf /var/lib/apt/lists/*
+
 # 复制所有代码
 COPY . .
 

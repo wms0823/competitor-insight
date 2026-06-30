@@ -16,7 +16,7 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "sse-starlette",
-    "psycopg2-binary",
+    "psycopg[binary]",
     "langgraph-checkpoint-postgres",
     "trafilatura",
     "pydantic-settings",
