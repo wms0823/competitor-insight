@@ -55,10 +55,10 @@ def supervisor_node(state: ComparisonState) -> dict:
 
 
 def _summarize(state: ComparisonState, llm):
-    """四个维度全部完成 → 汇总 + 冲突检测"""
-    summary_prompt = f"""汇总以下四个维度的对比结果，生成最终报告。
+    """四个维度全部完成 → 综合测评：交叉验证 + 冲突检测 + 技术建议"""
+    summary_prompt = f"""你是资深技术选型顾问。综合评审以下四个维度的竞品分析，进行交叉验证、冲突检测，并给出分场景的技术选型建议。
 
-产品A: {state['product_a']} | 产品B: {state['product_b']}
+产品A: {state['product_a']} | 产品B: {state['product_b']} | 品类: {state.get('category', '通用')}
 
 功能对比: {state.get('feature_result','')}
 价格对比: {state.get('pricing_result','')}
@@ -66,9 +66,10 @@ def _summarize(state: ComparisonState, llm):
 场景对比: {state.get('scenario_result','')}
 
 要求：
-1. 生成结构化对比报告（总评 + 各维度打分 + 决策建议）
-2. 找出冲突点：是否有维度结论互相矛盾的地方
-3. 给出最终推荐及理由"""
+1. 交叉验证各维度结论的一致性，找出矛盾点
+2. 加权综合评分 — 功能30% + 价格25% + 口碑25% + 场景20%
+3. 分场景推荐（个人/小团队、中型企业、大型企业三种画像）
+4. 给出 3-5 条可操作的技术决策建议，包含适用条件和风险提示"""
     resp = llm.invoke([SystemMessage(content=summary_prompt)])
     return {
         "messages": [resp],

@@ -27,6 +27,8 @@ class Settings(BaseSettings):
             temperature=temperature,
             api_key=self.deepseek_api_key,
             base_url=self.deepseek_base_url,
+            request_timeout=60,  # 单次 LLM 调用最多等 60 秒
+            max_retries=2,       # 失败自动重试 2 次
         )
 
 

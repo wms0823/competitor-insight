@@ -3,6 +3,9 @@
 *.env
 .env.*
 
+# === 但保留 .env.example（模板文件需要被跟踪） ===
+!.env.example
+
 # === Python ===
 venv/
 __pycache__/
@@ -12,6 +15,11 @@ __pycache__/
 dist/
 build/
 *.egg
+.pytest_cache/
+
+# === 生成的报告文件 ===
+competitor-report.md
+test_report.md
 
 # === 运行时数据 ===
 chroma_data/

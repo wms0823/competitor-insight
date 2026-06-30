@@ -28,3 +28,9 @@ app.include_router(router)
 async def index():
     """返回竞品对比分析系统首页"""
     return FileResponse(str(static_dir / "index.html"))
+
+
+@app.get("/health", tags=["系统"])
+async def health():
+    """健康检查端点"""
+    return {"status": "ok", "version": "0.1.0"}

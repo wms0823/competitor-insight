@@ -1,9 +1,13 @@
-from fastapi import APIRouter
+import asyncio
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from src.graph import build_graph
 from src.config import settings
 
 router = APIRouter(tags=["竞品对比"])
+
+# 单次对比分析最大等待时间（秒）
+ANALYSIS_TIMEOUT = 180
 
 
 class CompareRequest(BaseModel):
@@ -41,13 +45,18 @@ class CompareResponse(BaseModel):
     status: str = Field(
         ...,
         title="状态",
-        description="对比任务状态：completed 表示已完成",
+        description="对比任务状态：completed/timeout/error",
         examples=["completed"],
     )
     report: str | None = Field(
         None,
         title="分析报告",
         description="最终对比分析报告（Markdown 格式）",
+    )
+    error: str | None = Field(
+        None,
+        title="错误信息",
+        description="如果任务失败，返回错误描述",
     )
 
 
@@ -66,18 +75,36 @@ async def compare(req: CompareRequest):
     """
     thread_id = f"cmp_{req.product_a[:10]}_vs_{req.product_b[:10]}"
     config = {"configurable": {"thread_id": thread_id}}
-    app = build_graph(settings.database_url)
-    state = {
-        "product_a": req.product_a,
-        "product_b": req.product_b,
-        "category": req.category,
-        "completed_dims": [],
-        "error_count": 0,
-        "max_retries": 3,
-    }
-    result = app.invoke(state, config)
-    return CompareResponse(
-        thread_id=config["configurable"]["thread_id"],
-        status="completed",
-        report=result.get("final_report"),
-    )
+
+    try:
+        app = build_graph(settings.database_url)
+        state = {
+            "product_a": req.product_a,
+            "product_b": req.product_b,
+            "category": req.category,
+            "completed_dims": [],
+            "error_count": 0,
+            "max_retries": 3,
+        }
+        # 添加超时保护，防止长时间无响应
+        result = await asyncio.wait_for(
+            asyncio.to_thread(app.invoke, state, config),
+            timeout=ANALYSIS_TIMEOUT,
+        )
+        return CompareResponse(
+            thread_id=config["configurable"]["thread_id"],
+            status="completed",
+            report=result.get("final_report"),
+        )
+    except asyncio.TimeoutError:
+        return CompareResponse(
+            thread_id=thread_id,
+            status="timeout",
+            error=f"分析超时（{ANALYSIS_TIMEOUT}秒），请稍后重试或更换产品名称",
+        )
+    except Exception as e:
+        return CompareResponse(
+            thread_id=thread_id,
+            status="error",
+            error=f"分析失败: {type(e).__name__}: {str(e)[:200]}",
+        )
