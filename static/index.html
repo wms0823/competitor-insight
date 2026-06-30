@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>竞品深度对比分析系统</title>
+<style>
+  :root {
+    --bg: #f5f6fa;
+    --card: #fff;
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --text: #1e293b;
+    --text-secondary: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --radius: 12px;
+    --vs-color: #ef4444;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── header ── */
+  .header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header .logo { font-size: 18px; font-weight: 700; }
+  .header .badge {
+    font-size: 11px;
+    background: #eef2ff;
+    color: var(--primary);
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 500;
+  }
+
+  /* ── layout ── */
+  .layout {
+    display: flex;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
+    gap: 24px;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* ── sidebar ── */
+  .sidebar {
+    width: 200px;
+    flex-shrink: 0;
+  }
+  .sidebar .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    position: sticky;
+    top: 80px;
+  }
+  .sidebar .card h3 {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 16px;
+  }
+  .sidebar label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .sidebar select, .sidebar input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: border .15s;
+  }
+  .sidebar select:focus, .sidebar input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+  }
+  .sidebar .hint {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  /* ── main ── */
+  .main { flex:1; min-width:0; }
+
+  /* vs inputs */
+  .vs-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .vs-row .input-box {
+    flex: 1;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    text-align: center;
+    border: 2px solid transparent;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .vs-row .input-box:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(79,70,229,.08);
+  }
+  .vs-row .input-box .label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+  .vs-row .input-box input {
+    width: 100%;
+    border: none;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    outline: none;
+    background: transparent;
+  }
+  .vs-row .input-box input::placeholder {
+    color: #cbd5e1;
+    font-weight: 400;
+    font-size: 16px;
+  }
+  .vs-row .vs-badge {
+    flex-shrink: 0;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--vs-color);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+
+  /* button */
+  .btn-row { text-align: center; margin-bottom: 28px; }
+  .btn-compare {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 36px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--primary);
+    border: none;
+    border-radius: 99px;
+    cursor: pointer;
+    transition: background .15s, transform .1s, box-shadow .15s;
+    box-shadow: 0 2px 8px rgba(79,70,229,.3);
+  }
+  .btn-compare:hover { background: var(--primary-hover); }
+  .btn-compare:active { transform: scale(.98); }
+  .btn-compare:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .btn-compare .spinner {
+    display: none;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  .btn-compare.loading .spinner { display: inline-block; }
+  .btn-compare.loading .btn-text { display: none; }
+
+  /* ── result ── */
+  .result-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px 32px;
+    display: none;
+  }
+  .result-card.visible { display: block; }
+
+  .result-placeholder {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+  }
+  .result-placeholder .icon { font-size: 40px; margin-bottom: 12px; }
+  .result-placeholder p { font-size: 14px; }
+
+  /* markdown-like report styling */
+  .report-content h1 { font-size: 22px; margin-bottom: 16px; }
+  .report-content h2 { font-size: 17px; margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .report-content h3 { font-size: 15px; margin: 16px 0 8px; }
+  .report-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .report-content th, .report-content td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  .report-content th {
+    background: #f8fafc;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .report-content ul, .report-content ol { margin: 8px 0; padding-left: 20px; }
+  .report-content li { margin: 4px 0; font-size: 14px; line-height: 1.6; }
+  .report-content p { font-size: 14px; line-height: 1.7; margin: 8px 0; }
+  .report-content strong { color: var(--primary); }
+  .report-content hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .report-content code {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+
+  <!-- error -->
+  .error-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 16px;
+    color: #dc2626;
+    font-size: 14px;
+    display: none;
+  }
+  .error-box.visible { display: block; }
+
+  /* loading indicator */
+  .loading-indicator {
+    display: none;
+    text-align: center;
+    padding: 32px 20px;
+  }
+  .loading-indicator.visible { display: block; }
+  .loading-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 12px; }
+  .loading-dots span {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--primary);
+    animation: bounce 1.2s infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: .2s; }
+  .loading-dots span:nth-child(3) { animation-delay: .4s; }
+  .loading-text { font-size: 13px; color: var(--text-secondary); }
+  .loading-timer { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+  @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+  /* responsive */
+  @media (max-width: 700px) {
+    .layout { flex-direction:column; padding:16px; }
+    .sidebar { width:100%; }
+    .sidebar .card { position:static; }
+    .vs-row { flex-direction:column; gap:10px; }
+    .vs-row .vs-badge { width:32px; height:32px; font-size:12px; }
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span style="font-size:20px;">🔍</span>
+  <span class="logo">竞品深度对比分析系统</span>
+  <span class="badge">AI 多智能体</span>
+</div>
+
+<div class="layout">
+
+  <!-- 左侧：参数设置 -->
+  <aside class="sidebar">
+    <div class="card">
+      <h3>⚙️ 参数设置</h3>
+      <div style="margin-bottom:16px;">
+        <label for="category">产品品类</label>
+        <select id="category">
+          <option value="通用">通用</option>
+          <option value="文档协作工具">文档协作工具</option>
+          <option value="项目管理工具">项目管理工具</option>
+          <option value="即时通讯">即时通讯</option>
+          <option value="设计工具">设计工具</option>
+          <option value="代码托管平台">代码托管平台</option>
+          <option value="云服务平台">云服务平台</option>
+          <option value="数据分析工具">数据分析工具</option>
+          <option value="AI 模型">AI 模型</option>
+          <option value="CRM 系统">CRM 系统</option>
+        </select>
+      </div>
+      <div>
+        <label for="customCategory">或自定义品类</label>
+        <input id="customCategory" placeholder="输入自定义品类…" />
+        <p class="hint">填写后将覆盖上方选择</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 右侧：主要内容 -->
+  <main class="main">
+
+    <!-- 对比输入区 -->
+    <div class="vs-row">
+      <div class="input-box">
+        <div class="label">产品 A</div>
+        <input id="productA" placeholder="输入产品名称…" autofocus />
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="input-box">
+        <div class="label">产品 B</div>
+        <input id="productB" placeholder="输入产品名称…" />
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-compare" id="btnCompare" onclick="doCompare()">
+        <span class="spinner"></span>
+        <span class="btn-text">开始对比分析</span>
+      </button>
+    </div>
+
+    <!-- 加载中 -->
+    <div class="loading-indicator" id="loadingIndicator">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <div class="loading-text">AI 智能体正在并行分析中，请耐心等待…</div>
+      <div class="loading-timer" id="loadingTimer"></div>
+    </div>
+
+    <!-- 错误提示 -->
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- 结果区 -->
+    <div class="result-card" id="resultCard">
+      <div class="report-content" id="reportContent"></div>
+    </div>
+
+    <!-- 空状态占位 -->
+    <div class="result-placeholder" id="placeholder">
+      <div class="icon">📊</div>
+      <p>输入两个产品名称，点击「开始对比分析」<br>系统将从功能、价格、口碑、场景四个维度进行深度对比</p>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const MAX_WAIT_MS = 600000; // 10分钟超时
+
+async function doCompare() {
+  const btn = document.getElementById('btnCompare');
+  const errorBox = document.getElementById('errorBox');
+  const resultCard = document.getElementById('resultCard');
+  const reportContent = document.getElementById('reportContent');
+  const placeholder = document.getElementById('placeholder');
+  const loadingEl = document.getElementById('loadingIndicator');
+  const timerEl = document.getElementById('loadingTimer');
+
+  const productA = document.getElementById('productA').value.trim();
+  const productB = document.getElementById('productB').value.trim();
+  const customCat = document.getElementById('customCategory').value.trim();
+  const category = customCat || document.getElementById('category').value;
+
+  if (!productA || !productB) {
+    showError('请填写两个产品名称');
+    return;
+  }
+  if (productA === productB) {
+    showError('请输入两个不同的产品名称');
+    return;
+  }
+
+  // reset UI
+  errorBox.classList.remove('visible');
+  resultCard.classList.remove('visible');
+  placeholder.style.display = 'none';
+  loadingEl.classList.add('visible');
+
+  // button loading
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  // timer
+  let startTime = Date.now();
+  let timerInterval = setInterval(function() {
+    let elapsed = Math.floor((Date.now() - startTime) / 1000);
+    let min = Math.floor(elapsed / 60);
+    let sec = elapsed % 60;
+    timerEl.textContent = '已耗时 ' + min + ' 分 ' + sec + ' 秒…';
+  }, 1000);
+
+  // abort controller for timeout
+  let controller = new AbortController();
+  let timeoutId = setTimeout(function() { controller.abort(); }, MAX_WAIT_MS);
+
+  try {
+    const resp = await fetch('/compare', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        product_a: productA,
+        product_b: productB,
+        category: category
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(function() { return {}; });
+      throw new Error(err.detail || '请求失败 (' + resp.status + ')');
+    }
+
+    const data = await resp.json();
+
+    if (data.report) {
+      reportContent.innerHTML = simpleMarkdown(data.report);
+      resultCard.classList.add('visible');
+      loadingEl.classList.remove('visible');
+    } else {
+      showError('分析完成但未生成报告，请重试');
+    }
+  } catch (e) {
+    loadingEl.classList.remove('visible');
+    if (e.name === 'AbortError') {
+      showError('分析超时（超过 10 分钟），请尝试减少对比范围或稍后重试');
+    } else {
+      showError(e.message || '网络错误，请检查服务是否正常运行');
+    }
+  } finally {
+    clearInterval(timerInterval);
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+function showError(msg) {
+  const errorBox = document.getElementById('errorBox');
+  const loadingEl = document.getElementById('loadingIndicator');
+  loadingEl.classList.remove('visible');
+  errorBox.textContent = '❌ ' + msg;
+  errorBox.classList.add('visible');
+}
+
+/* lightweight markdown → HTML */
+function simpleMarkdown(md) {
+  var html = md
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^---$/gm, '<hr>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>')
+    .replace(/((?:^\|.+\|\n?)+)/gm, function(match) {
+      var rows = match.trim().split('\n');
+      rows = rows.filter(function(r) { return !/^\|[-: ]+\|$/.test(r); });
+      if (rows.length === 0) return match;
+      var tableHtml = '<table>';
+      rows.forEach(function(row, i) {
+        var cells = row.split('|').filter(function(c) { return c.trim() !== ''; });
+        var tag = i === 0 ? 'th' : 'td';
+        tableHtml += '<tr>' + cells.map(function(c) {
+          return '<' + tag + '>' + c.trim() + '</' + tag + '>';
+        }).join('') + '</tr>';
+      });
+      tableHtml += '</table>';
+      return tableHtml;
+    })
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+
+  html = '<p>' + html + '</p>';
+  html = html.replace(/<p><\/p>/g, '');
+  html = html.replace(/<p>(<[hut])/g, '$1');
+  html = html.replace(/(<\/[hut].*?>)<\/p>/g, '$1');
+  return html;
+}
+
+/* Enter to submit */
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+    e.preventDefault();
+    doCompare();
+  }
+});
+</script>
+</body>
+</html>

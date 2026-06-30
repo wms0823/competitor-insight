@@ -1,0 +1,29 @@
+from typing import TypedDict, Annotated, List, Optional, Literal
+from langgraph.graph.message import add_messages
+from langchain_core.messages import BaseMessage
+
+
+class ComparisonState(TypedDict):
+    # === 消息历史 ===
+    messages: Annotated[List[BaseMessage], add_messages]
+
+    # === 用户输入 ===
+    product_a: str          # 产品A名称
+    product_b: str          # 产品B名称
+    category: str           # 所属品类
+
+    # === 各维度产出 ===
+    feature_result: Optional[str]    # 功能对比结果
+    pricing_result: Optional[str]    # 价格对比结果
+    sentiment_result: Optional[str]  # 口碑对比结果
+    scenario_result: Optional[str]   # 场景对比结果
+
+    # === 汇总 ===
+    final_report: Optional[str]      # 最终对比报告
+    conflict_points: Optional[str]   # 冲突点（各维度结论矛盾处）
+
+    # === 控制 ===
+    next_agent: Optional[str]        # supervisor 的路由决策
+    completed_dims: List[str]        # 已完成的维度
+    error_count: int
+    max_retries: int

@@ -1,0 +1,36 @@
+# === 敏感文件（API Key 等）===
+.env
+*.env
+.env.*
+
+# === Python ===
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# === 运行时数据 ===
+chroma_data/
+*.db
+*.sqlite3
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# === 系统 ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === Docker ===
+docker/pgdata/
+
+# === 日志 ===
+*.log
