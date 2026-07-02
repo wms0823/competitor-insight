@@ -42,3 +42,7 @@ docker/pgdata/
 
 # === 日志 ===
 *.log
+
+# === 工具 ===
+.reasonix/
+reasonix.toml

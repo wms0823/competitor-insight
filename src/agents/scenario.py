@@ -1,35 +1,32 @@
-from langchain_core.messages import SystemMessage
-from src.state import ComparisonState
-from src.tools.search import search_tool
-from src.config import settings
+"""场景对比 Agent — 基于 ReAct 循环。"""
 
-SCENARIO_PROMPT = """你是场景对比分析专家。请根据以下搜索结果，对比 {product_a} 和 {product_b} 的适用场景。
+from src.agents.base import create_dimension_agent
 
-搜索结果：
-{search_results}
+SCENARIO_SYSTEM_PROMPT = """\
+你是场景对比分析专家。对比 {product_a} 和 {product_b} 的适用场景。
 
-输出要求：简洁。
+## 搜索策略（高效搜索，3-4 次即可）
+1. 搜 "{product_a} 使用场景 适用团队 案例"
+2. 搜 "{product_b} 行业解决方案 客户案例"
+3. 搜 "{product_a} vs {product_b} 适用场景 选型"
+4. 信息足够后立即输出，不要过度搜索。
 
-## 场景对比
-| 维度 | {product_a} | {product_b} | 优势方 |
+## 输出格式
+
+### 场景对比
+| 场景 | {product_a} | {product_b} | 优势方 |
 |------|------------|------------|--------|
-（适用团队、行业、场景等）
+（覆盖：个人使用、小团队、中大型企业、远程办公、垂直行业）
 
-### 场景维度打分（1-10）
-- {product_a}: X分
-- {product_b}: Y分"""
+### 分规模推荐
+- 个人/自由职业者 → 推荐及理由
+- 小团队（2-10人）→ 推荐及理由
+- 中型企业（10-100人）→ 推荐及理由
+- 大型企业（100+人）→ 推荐及理由
 
+### 场景评分（1-10，覆盖面越广越高）
+- {product_a}: X 分 — 依据
+- {product_b}: Y 分 — 依据
+"""
 
-def scenario_agent(state: ComparisonState) -> dict:
-    a, b = state["product_a"], state["product_b"]
-
-    try:
-        results = search_tool.invoke(f"{a} vs {b} 适用场景 行业案例 最佳实践")
-    except Exception:
-        results = "搜索结果暂不可用"
-
-    llm = settings.get_llm(temperature=0.1)
-    prompt = SCENARIO_PROMPT.format(product_a=a, product_b=b, search_results=results[:2000])
-    resp = llm.invoke([SystemMessage(content=prompt)])
-
-    return {"scenario_result": resp.content}
+scenario_agent = create_dimension_agent("scenario", SCENARIO_SYSTEM_PROMPT)

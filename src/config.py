@@ -1,6 +1,23 @@
+import logging
 import os
-from pydantic_settings import BaseSettings
+
 from langchain_openai import ChatOpenAI
+from pydantic_settings import BaseSettings
+
+# ── 全局日志配置 ──
+_LOGGING_FORMAT = "%(asctime)s [%(levelname)s] [%(trace_id)s] %(name)s: %(message)s"
+
+# 先做 basicConfig（创建 root handler），再替换为防御性 Formatter
+logging.basicConfig(level=logging.INFO, format=_LOGGING_FORMAT, datefmt="%H:%M:%S")
+
+from src.observability import TraceContextFilter, TraceFormatter  # noqa: E402
+
+_root_logger = logging.getLogger()
+_root_logger.addFilter(TraceContextFilter())
+
+# 替换 root handler 的 formatter（防御子线程中 trace_id 缺失崩溃）
+for handler in _root_logger.handlers:
+    handler.setFormatter(TraceFormatter(_LOGGING_FORMAT, datefmt="%H:%M:%S"))
 
 
 def _build_database_url() -> str:

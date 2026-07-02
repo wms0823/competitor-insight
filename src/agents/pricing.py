@@ -1,35 +1,30 @@
-from langchain_core.messages import SystemMessage
-from src.state import ComparisonState
-from src.tools.search import search_tool
-from src.config import settings
+"""价格对比 Agent — 基于 ReAct 循环。"""
 
-PRICING_PROMPT = """你是价格对比分析专家。请根据以下搜索结果，对比 {product_a} 和 {product_b} 的定价体系。
+from src.agents.base import create_dimension_agent
 
-搜索结果：
-{search_results}
+PRICING_SYSTEM_PROMPT = """\
+你是价格对比分析专家。对比 {product_a} 和 {product_b} 的定价体系。
 
-输出要求：简洁，关键信息优先。
+## 搜索策略（高效搜索，3-4 次即可）
+1. 先搜 "{product_a} 价格 定价 套餐" 和 "{product_b} 价格 定价 套餐"
+2. 再搜 "{product_a} vs {product_b} 价格对比 性价比"
+3. 如果找到官方定价页，可抓取确认。信息足够后立即输出。
 
-## 价格对比
+## 输出格式
+
+### 价格对比
 | 维度 | {product_a} | {product_b} | 优势方 |
 |------|------------|------------|--------|
-（定价模式、最低价、免费额度等）
+（覆盖：免费版、入门版、专业版、企业版、计费模式、隐藏成本）
 
-### 价格维度打分（1-10）
-- {product_a}: X分
-- {product_b}: Y分"""
+### 性价比分析
+- 个人/小团队推荐
+- 中型团队总成本估算
+- 大型企业总成本估算
 
+### 价格评分（1-10，越实惠越高）
+- {product_a}: X 分 — 依据
+- {product_b}: Y 分 — 依据
+"""
 
-def pricing_agent(state: ComparisonState) -> dict:
-    a, b = state["product_a"], state["product_b"]
-
-    try:
-        results = search_tool.invoke(f"{a} {b} 价格对比 定价 套餐 免费")
-    except Exception:
-        results = "搜索结果暂不可用"
-
-    llm = settings.get_llm(temperature=0.1)
-    prompt = PRICING_PROMPT.format(product_a=a, product_b=b, search_results=results[:2000])
-    resp = llm.invoke([SystemMessage(content=prompt)])
-
-    return {"pricing_result": resp.content}
+pricing_agent = create_dimension_agent("pricing", PRICING_SYSTEM_PROMPT)

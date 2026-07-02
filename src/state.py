@@ -1,6 +1,14 @@
-from typing import TypedDict, Annotated, List, Optional, Literal
-from langgraph.graph.message import add_messages
+from typing import Annotated, Dict, List, Optional, TypedDict
+
 from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
+
+
+def _merge_metrics(left: dict, right: dict) -> dict:
+    """合并并行 Agent 的指标字典（LangGraph reducer）。"""
+    merged = {**left}
+    merged.update(right)
+    return merged
 
 
 class ComparisonState(TypedDict):
@@ -11,6 +19,10 @@ class ComparisonState(TypedDict):
     product_a: str          # 产品A名称
     product_b: str          # 产品B名称
     category: str           # 所属品类
+
+    # === 链路追踪 ===
+    trace_id: str           # 请求级追踪 ID
+    agent_metrics: Annotated[Dict[str, dict], _merge_metrics]  # 各 Agent 耗时/调用统计（支持并行合并）
 
     # === 各维度产出 ===
     feature_result: Optional[str]    # 功能对比结果
@@ -23,7 +35,7 @@ class ComparisonState(TypedDict):
     conflict_points: Optional[str]   # 冲突点（各维度结论矛盾处）
 
     # === 控制 ===
-    next_agent: Optional[str]        # supervisor 的路由决策
+    next_agent: Optional[str]        # supervisor 的路由决策（预留）
     completed_dims: List[str]        # 已完成的维度
     error_count: int
     max_retries: int

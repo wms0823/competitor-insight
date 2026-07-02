@@ -295,6 +295,56 @@
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* metrics bar */
+  .metrics-bar {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: none;
+  }
+  .metrics-bar.visible { display: block; }
+  .metrics-bar .trace-line {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+  }
+  .metrics-bar .trace-line code {
+    background: #eef2ff;
+    color: var(--primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+  .metric-card {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .metric-card .agent-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 6px;
+    text-transform: capitalize;
+  }
+  .metric-card .metric-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 2px 0;
+  }
+  .metric-card .metric-row span:last-child {
+    font-weight: 500;
+    color: var(--text);
+  }
+
 </style>
 </head>
 <body>
@@ -370,6 +420,10 @@
     <!-- 结果区 -->
     <div class="result-card" id="resultCard">
       <div class="report-content" id="reportContent"></div>
+      <div class="metrics-bar" id="metricsBar">
+        <div class="trace-line">🔗 Trace ID: <code id="traceIdDisplay"></code></div>
+        <div class="metrics-grid" id="metricsGrid"></div>
+      </div>
     </div>
 
     <!-- 空状态占位 -->
@@ -453,6 +507,7 @@ async function doCompare() {
 
     if (data.report) {
       reportContent.innerHTML = simpleMarkdown(data.report);
+      renderMetrics(data);
       resultCard.classList.add('visible');
       loadingEl.classList.remove('visible');
     } else {
@@ -515,6 +570,51 @@ function simpleMarkdown(md) {
   html = html.replace(/<p>(<[hut])/g, '$1');
   html = html.replace(/(<\/[hut].*?>)<\/p>/g, '$1');
   return html;
+}
+
+function renderMetrics(data) {
+  var bar = document.getElementById('metricsBar');
+  var grid = document.getElementById('metricsGrid');
+  var traceDisplay = document.getElementById('traceIdDisplay');
+
+  if (data.trace_id) {
+    traceDisplay.textContent = data.trace_id;
+  }
+
+  var metrics = data.metrics || {};
+  var agents = Object.keys(metrics);
+  if (agents.length === 0) {
+    bar.classList.remove('visible');
+    return;
+  }
+  bar.classList.add('visible');
+
+  // 中文名映射
+  var labels = {
+    feature: '功能', pricing: '价格', sentiment: '口碑',
+    scenario: '场景', evaluator: '综合评审'
+  };
+
+  var html = '';
+  agents.forEach(function(name) {
+    var m = metrics[name] || {};
+    var label = labels[name] || name;
+    var toolsList = '';
+    var toolsUsed = m.tools_used || {};
+    Object.keys(toolsUsed).forEach(function(t) {
+      toolsList += '<div class="metric-row"><span>  ' + t + '</span><span>' + toolsUsed[t] + ' 次</span></div>';
+    });
+    html += (
+      '<div class="metric-card">'
+      + '<div class="agent-name">' + label + '</div>'
+      + '<div class="metric-row"><span>耗时</span><span>' + (m.elapsed_ms || 0) + ' ms</span></div>'
+      + '<div class="metric-row"><span>LLM 调用</span><span>' + (m.llm_calls || 0) + ' 次</span></div>'
+      + '<div class="metric-row"><span>工具调用</span><span>' + (m.tool_calls || 0) + ' 次</span></div>'
+      + toolsList
+      + '</div>'
+    );
+  });
+  grid.innerHTML = html;
 }
 
 /* Enter to submit */

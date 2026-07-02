@@ -1,37 +1,29 @@
-from langchain_core.messages import SystemMessage
-from src.state import ComparisonState
-from src.tools.search import search_tool
-from src.config import settings
+"""功能对比 Agent — 基于 ReAct 循环。"""
 
-FEATURE_PROMPT = """你是功能对比分析专家。请根据以下搜索结果，对比 {product_a} 和 {product_b} 的功能差异。
+from src.agents.base import create_dimension_agent
 
-搜索结果：
-{search_results}
+FEATURE_SYSTEM_PROMPT = """\
+你是功能对比分析专家。对比 {product_a} 和 {product_b} 的功能差异。
 
-输出要求：简洁，直接给表格和要点，无需冗余描述。
+## 搜索策略（高效搜索，3-4 次即可）
+1. 先搜 "{product_a} vs {product_b} 功能对比" 获取全局视角
+2. 再搜 "{product_a} 核心功能 特色" 和 "{product_b} 核心功能 特色" 补充细节
+3. 信息足够后立即输出，不要在细节上过度搜索
 
-## 功能对比
-| 功能 | {product_a} | {product_b} | 优势方 |
-|------|------------|------------|--------|
-（至少 5 项核心功能对比）
+## 输出格式
 
-### 功能维度打分（1-10）
-- {product_a}: X分
-- {product_b}: Y分"""
+### 功能对比总览
+| 功能维度 | {product_a} | {product_b} | 优势方 |
+|----------|------------|------------|--------|
+（至少 6 项：编辑能力、协作、集成生态、安全合规、AI能力、开放API）
 
+### 关键差异
+- {product_a} 核心优势（2-3 条）
+- {product_b} 核心优势（2-3 条）
 
-def feature_agent(state: ComparisonState) -> dict:
-    a, b = state["product_a"], state["product_b"]
+### 功能评分（1-10）
+- {product_a}: X 分 — 依据
+- {product_b}: Y 分 — 依据
+"""
 
-    # 1. 一次搜索
-    try:
-        results = search_tool.invoke(f"{a} vs {b} 功能对比 核心功能 特色")
-    except Exception:
-        results = "搜索结果暂不可用"
-
-    # 2. 一次 LLM 调用（限制搜索结果长度，加速生成）
-    llm = settings.get_llm(temperature=0.1)
-    prompt = FEATURE_PROMPT.format(product_a=a, product_b=b, search_results=results[:2000])
-    resp = llm.invoke([SystemMessage(content=prompt)])
-
-    return {"feature_result": resp.content}
+feature_agent = create_dimension_agent("feature", FEATURE_SYSTEM_PROMPT)
