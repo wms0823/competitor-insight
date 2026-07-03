@@ -45,4 +45,4 @@ docker/pgdata/
 
 # === 工具 ===
 .reasonix/
-reasonix.toml
+reasonix.tomltest_report.txt

@@ -1,7 +1,6 @@
 """综合测评 Agent — 交叉验证四个维度的分析结果，生成最终决策报告。"""
 
 import logging
-import re
 
 from langchain_core.messages import SystemMessage
 
@@ -12,12 +11,10 @@ from src.state import ComparisonState
 logger = logging.getLogger(__name__)
 
 EVALUATOR_PROMPT = """\
-你是资深技术选型顾问。请综合以下四个维度的竞品分析，进行交叉验证、冲突检测，并给出可操作的决策建议。
+你是资深技术选型顾问。综合以下四个维度的竞品分析，交叉验证、冲突检测，输出可操作的决策建议。
 
 ## 对比对象
-- 产品A: {product_a}
-- 产品B: {product_b}
-- 品类: {category}
+- 产品A: {product_a}  |  产品B: {product_b}  |  品类: {category}
 
 ## 四维分析数据
 
@@ -33,69 +30,62 @@ EVALUATOR_PROMPT = """\
 ### 场景维度
 {scenario_result}
 
-## 输出格式（严格按以下模板，用 `---` 分隔各板块）
+## 输出规范
 
-### 总评
-一句话结论。
+**格式要求：**
+- 使用标准 Markdown，不要用 `---` 分隔线
+- 所有标题从 `##` 开始
+- 表格必须对齐、数据真实（不要留空或填占位符）
+- 语言简洁，面向业务决策者（非技术人员也可理解）
+- 不要使用任何 HTML 注释标签
+- 评分用「8/10」格式，不要用星星等符号
 
----
+**必须包含以下板块（按顺序）：**
 
-### 交叉验证
-- 数据最扎实的维度及原因
-- 信息不足或存在推测的维度
-- 各维度结论一致性判断
+## 一、总评
+用 2-3 句话说明两款产品的核心差异和选择导向。
 
----
+## 二、各维度对比一览
 
-### 冲突点
-矛盾结论及原因（无冲突则写"各维度结论一致，无明显冲突"）
+用一张表格汇总四个维度的打分和一句话点评：
 
----
+| 对比维度 | {product_a} | {product_b} | 一句话点评 |
+|---------|------------|------------|-----------|
+| 功能 | X/10 | Y/10 | ... |
+| 价格 | X/10 | Y/10 | ... |
+| 口碑 | X/10 | Y/10 | ... |
+| 场景 | X/10 | Y/10 | ... |
 
-### 综合评分
-| 维度 | 权重 | {product_a} | {product_b} | 说明 |
-|------|------|------------|------------|------|
-| 功能 | 30% | X/10 | Y/10 | |
-| 价格 | 25% | X/10 | Y/10 | |
-| 口碑 | 25% | X/10 | Y/10 | |
-| 场景 | 20% | X/10 | Y/10 | |
-| **加权总分** | **100%** | **X.X** | **Y.Y** | |
+## 三、交叉验证
 
----
+- 数据最扎实的维度和原因
+- 信息不足或不确定的地方
+- 各维度结论是否一致
 
-### 分场景推荐
-| 用户画像 | 推荐产品 | 核心理由 |
-|----------|---------|---------|
-| 个人/自由职业者 | | |
-| 小团队（2-10人） | | |
-| 中型企业（10-100人） | | |
-| 大型企业（100+人） | | |
+## 四、关键差异
 
----
+分条列出两个产品最本质的 3-5 个不同点（功能定位、价格策略、目标用户、生态等），每条不超过 60 字。
 
-### 技术决策建议
-3-5 条，每条含 **建议**、**适用条件**、**风险提示**。
+## 五、冲突发现
 
----
+如果各维度结论一致就写「各维度结论一致，未发现明显矛盾」；如果有矛盾（比如功能得分高但口碑差），说明可能的原因。
 
-<!--CONFLICTS-->
-冲突摘要
-<!--END_CONFLICTS-->
+## 六、分场景推荐
+
+| 用户画像 | 推荐 | 理由 |
+|---------|------|------|
+| 个人用户 | {product_a} 或 {product_b} | 一句话理由 |
+| 小团队（2-10人） | {product_a} 或 {product_b} | 一句话理由 |
+| 中型企业（10-100人） | {product_a} 或 {product_b} | 一句话理由 |
+| 大型企业（100人以上） | {product_a} 或 {product_b} | 一句话理由 |
+
+## 七、选型建议
+
+按优先级列出 3-5 条决策建议，每条包含：在什么情况下选哪个产品、需要注意什么风险。用加粗标注产品名称。
 """
 
 # 每维度最大输入字符数
 DIM_TRIM_CHARS = 1500
-
-
-def _dedup_separators(text: str) -> str:
-    """合并连续的 --- 分隔线，避免空白板块。"""
-    # 将连续的 "---\n\n---" 合并为单个 "---"
-    text = re.sub(r'(\n---\s*){2,}', '\n\n---\n\n', text)
-    # 去除开头多余的 ---
-    text = text.lstrip("\n")
-    if text.startswith("---"):
-        text = text[3:].lstrip("\n")
-    return text
 
 
 def evaluator_agent(state: ComparisonState) -> dict:
@@ -135,28 +125,7 @@ def evaluator_agent(state: ComparisonState) -> dict:
     logger.info("Evaluator 开始综合评审...")
     resp = llm.invoke([SystemMessage(content=prompt)])
     metrics.record_llm_call()
-    report = resp.content.replace("\r\n", "\n")
-
-    # ── 后处理：清理格式 ──
-    report = _dedup_separators(report)
-
-    # ── 解析冲突摘要 ──
-    conflicts = ""
-    if "<!--CONFLICTS-->" in report and "<!--END_CONFLICTS-->" in report:
-        start = report.index("<!--CONFLICTS-->") + len("<!--CONFLICTS-->")
-        end = report.index("<!--END_CONFLICTS-->")
-        conflicts = report[start:end].strip()
-        # 清理前缀
-        prefix = report[: start - len("<!--CONFLICTS-->")].rstrip()
-        while prefix.endswith("---"):
-            prefix = prefix[:-3].rstrip("\n").rstrip()
-        report = (
-            prefix
-            + "\n\n---\n\n### 冲突摘要\n\n" + conflicts + "\n"
-            + report[end + len("<!--END_CONFLICTS-->"):].strip()
-        )
-
-    report = _dedup_separators(report)
+    report = resp.content.replace("\r\n", "\n").strip()
     metrics.stop()
 
     logger.info(
@@ -169,6 +138,6 @@ def evaluator_agent(state: ComparisonState) -> dict:
 
     return {
         "final_report": report,
-        "conflict_points": conflicts if conflicts else "无冲突",
+        "conflict_points": "",
         "agent_metrics": existing,
     }
