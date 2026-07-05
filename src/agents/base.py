@@ -1,9 +1,4 @@
-"""ReAct (Reasoning + Acting) Agent 工厂函数。
-
-将原本"搜索 → 截断 → 单次 LLM 调用"的流水线升级为真正的 Agent 循环：
-LLM 自主决定何时搜索、搜索什么、是否需要抓取详情页，
-多轮迭代直到信息充分后再输出结构化对比结果。
-"""
+"""ReAct Agent 工厂 — 支持 fast/standard/deep 三种性能模式 + 实时进度推送。"""
 
 import logging
 from typing import List
@@ -19,20 +14,37 @@ from src.tools.search import search_tool
 
 logger = logging.getLogger(__name__)
 
-# ── ReAct 配置 ──
-MAX_REACT_ITERATIONS = 6  # 最大迭代次数（Agent 通常在 3-4 轮内完成）
+# ── 模式配置 ──
+MODE_CONFIG = {
+    "fast": {
+        "max_iterations": 1,
+        "tools": [search_tool],
+        "label": "快速",
+        "desc": "1轮搜索，~20秒",
+    },
+    "standard": {
+        "max_iterations": 2,
+        "tools": [search_tool],
+        "label": "标准",
+        "desc": "2轮搜索，~30秒",
+    },
+    "deep": {
+        "max_iterations": 3,
+        "tools": [search_tool, scrape_tool],
+        "label": "深度",
+        "desc": "3轮搜索+网页抓取，~50秒",
+    },
+}
 
-# 所有维度 Agent 共用的工具集
-DIMENSION_TOOLS: List[BaseTool] = [search_tool, scrape_tool]
+DIM_LABELS = {
+    "feature": "功能对比",
+    "pricing": "价格对比",
+    "sentiment": "口碑对比",
+    "scenario": "场景对比",
+}
 
-# 工具名 → 工具实例的快速映射
-TOOL_BY_NAME = {t.name: t for t in DIMENSION_TOOLS}
 
-
-def create_dimension_agent(
-    name: str,
-    system_prompt: str,
-):
+def create_dimension_agent(name: str, system_prompt: str):
     """创建基于 ReAct 循环的维度对比 Agent。
 
     Args:
@@ -47,39 +59,62 @@ def create_dimension_agent(
         a = state["product_a"]
         b = state["product_b"]
         cat = state.get("category", "通用")
+        mode = state.get("mode", "standard")
+        cfg = MODE_CONFIG.get(mode, MODE_CONFIG["standard"])
+        max_iter = cfg["max_iterations"]
+        tools: List[BaseTool] = cfg["tools"]
+        tool_by_name = {t.name: t for t in tools}
+        dim_label = DIM_LABELS.get(name, name)
 
-        # ── 指标采集 ──
+        # ── 进度 ──
+        progress = list(state.get("progress", []))
+        progress.append(f"🔍 {dim_label}：开始分析...")
+        logger.info("[%s] 模式=%s 最大迭代=%d", name, mode, max_iter)
+
+        # ── 指标 ──
         metrics = AgentMetrics()
         metrics.start()
 
         # ── 初始化 LLM（绑定工具） ──
         llm = settings.get_llm(temperature=0.1)
-        llm_with_tools = llm.bind_tools(DIMENSION_TOOLS)
+        llm_with_tools = llm.bind_tools(tools) if tools else llm
+
+        # ── 搜索策略提示 ──
+        search_hint = ""
+        if mode == "fast":
+            search_hint = "搜索 1 次获取关键信息后立即输出对比结果。追求速度，不必穷尽。"
+        elif mode == "deep":
+            search_hint = (
+                "搜索 2-3 次获取全面信息，必要时抓取重要页面详情。追求深度和准确度。"
+            )
+        else:
+            search_hint = "搜索 1-2 次获取关键信息，信息充分后立即输出。追求效率。"
 
         # ── 构建初始消息 ──
-        system_msg = SystemMessage(content=system_prompt.format(
-            product_a=a, product_b=b, category=cat,
-        ))
-        user_msg = HumanMessage(content=(
-            f"请对比 {a} 和 {b}。"
-            f"用 search_tool 搜索 2-3 次获取关键信息，"
-            f"必要时用 scrape_tool 抓取重要页面。"
-            f"信息基本充分后立即输出对比结果，追求效率而非穷尽。"
-        ))
+        system_msg = SystemMessage(
+            content=system_prompt.format(product_a=a, product_b=b, category=cat)
+        )
+        user_msg = HumanMessage(content=f"请对比 {a} 和 {b}。{search_hint}")
 
         messages = [system_msg, user_msg]
 
         # ── ReAct 循环 ──
-        for iteration in range(1, MAX_REACT_ITERATIONS + 1):
-            logger.info("[%s] ReAct 第 %d/%d 轮", name, iteration, MAX_REACT_ITERATIONS)
+        for iteration in range(1, max_iter + 1):
+            logger.info("[%s] ReAct 第 %d/%d 轮", name, iteration, max_iter)
 
-            # 第 3 轮后提醒收尾
-            if iteration == 3:
-                messages.append(HumanMessage(content=(
-                    "（已搜索 3 轮，信息应该足够了。"
-                    "请现在综合所有信息，按格式输出对比结果。"
-                    "除非有关键数据完全缺失，否则不要再搜索。）"
-                )))
+            # 最后一轮前提醒收尾
+            if iteration == max_iter and max_iter > 1:
+                messages.append(
+                    HumanMessage(
+                        content="（请综合所有已获取信息，按格式输出对比结果，不要再搜索。）"
+                    )
+                )
+            elif iteration >= 2:
+                messages.append(
+                    HumanMessage(
+                        content="（信息应该足够了，请尽快输出对比结果。）"
+                    )
+                )
 
             response = llm_with_tools.invoke(messages)
             metrics.record_llm_call()
@@ -89,16 +124,20 @@ def create_dimension_agent(
             if not response.tool_calls:
                 metrics.stop()
                 logger.info(
-                    "[%s] 任务完成 — %d 轮 | %d ms | %d LLM 调用 | %d 工具调用",
-                    name, iteration,
-                    metrics.elapsed_ms, metrics.llm_calls, metrics.tool_calls,
+                    "[%s] 任务完成 — %d轮 | %dms | %d次LLM | %d次工具",
+                    name,
+                    iteration,
+                    metrics.elapsed_ms,
+                    metrics.llm_calls,
+                    metrics.tool_calls,
                 )
-                # 写入 state
                 existing = state.get("agent_metrics", {})
                 existing[name] = metrics.to_dict()
+                progress.append(f"✅ {dim_label}：完成（{iteration}轮，{metrics.elapsed_ms}ms）")
                 return {
                     f"{name}_result": response.content,
                     "agent_metrics": existing,
+                    "progress": progress,
                 }
 
             # ── 执行工具调用 ──
@@ -106,11 +145,13 @@ def create_dimension_agent(
                 tool_name = tc.get("name", "")
                 tool_args = tc.get("args", {})
                 tool_id = tc.get("id", "")
+                query_preview = str(tool_args.get("query", tool_args.get("url", "")))[:60]
 
                 metrics.record_tool_call(tool_name)
                 logger.info("[%s] 调用工具: %s(%s)", name, tool_name, tool_args)
+                progress.append(f"📡 {dim_label}：{tool_name} → {query_preview}...")
 
-                tool = TOOL_BY_NAME.get(tool_name)
+                tool = tool_by_name.get(tool_name)
                 if tool is None:
                     result = f"错误: 未知工具 '{tool_name}'"
                 else:
@@ -118,36 +159,32 @@ def create_dimension_agent(
                         result = tool.invoke(tool_args)
                     except Exception as exc:
                         result = (
-                            f"工具调用失败 ({type(exc).__name__}): "
-                            f"{str(exc)[:300]}"
+                            f"工具调用失败 ({type(exc).__name__}): {str(exc)[:300]}"
                         )
-                        logger.warning(
-                            "[%s] 工具 %s 调用失败: %s", name, tool_name, exc,
-                        )
+                        logger.warning("[%s] 工具 %s 失败: %s", name, tool_name, exc)
 
-                messages.append(ToolMessage(
-                    content=str(result),
-                    tool_call_id=tool_id,
-                ))
+                messages.append(
+                    ToolMessage(content=str(result), tool_call_id=tool_id)
+                )
 
         # ── 超过最大迭代次数，强制结束 ──
-        logger.warning(
-            "[%s] 达到最大迭代次数 %d，强制输出结果",
-            name, MAX_REACT_ITERATIONS,
+        logger.warning("[%s] 达到最大迭代次数 %d，强制输出", name, max_iter)
+        messages.append(
+            HumanMessage(
+                content="已达到最大搜索轮次。请基于已获取的所有信息，直接按格式输出对比结果，不要再调用工具。"
+            )
         )
-        messages.append(HumanMessage(content=(
-            "你已达到最大搜索轮次。请基于已获取的所有信息，"
-            "直接按要求的格式输出对比结果（不要再调用工具）。"
-        )))
         final = llm.invoke(messages)
         metrics.record_llm_call()
         metrics.stop()
 
         existing = state.get("agent_metrics", {})
         existing[name] = metrics.to_dict()
+        progress.append(f"✅ {dim_label}：完成（已达上限，{metrics.elapsed_ms}ms）")
         return {
             f"{name}_result": final.content,
             "agent_metrics": existing,
+            "progress": progress,
         }
 
     agent_node.__name__ = f"{name}_agent"

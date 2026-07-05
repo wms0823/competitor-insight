@@ -62,7 +62,7 @@ class Settings(BaseSettings):
             temperature=temperature,
             api_key=self.deepseek_api_key,
             base_url=self.deepseek_base_url,
-            request_timeout=60,
+            request_timeout=30,
             max_retries=2,
         )
 

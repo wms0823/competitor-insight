@@ -5,10 +5,10 @@ from src.agents.base import create_dimension_agent
 SENTIMENT_SYSTEM_PROMPT = """\
 你是口碑对比分析专家。对比 {product_a} 和 {product_b} 的用户口碑和市场声誉。
 
-## 搜索策略（高效搜索，3-4 次即可）
-1. 搜 "{product_a} 用户评价 测评 2025" 和 "{product_b} 口碑 用户反馈"
-2. 搜 "{product_a} vs {product_b} 用户体验 优缺点"
-3. 信息足够后立即输出，不要纠结于找到每一条用户评论。
+## 搜索策略（1-2 次即可）
+1. 搜 "{product_a} vs {product_b} 用户评价 口碑"
+2. 如有缺失再搜 "{product_a} {product_b} 用户体验"
+3. 信息足够后立即输出
 
 ## 输出格式
 

@@ -11,6 +11,11 @@ def _merge_metrics(left: dict, right: dict) -> dict:
     return merged
 
 
+def _merge_lists(left: list, right: list) -> list:
+    """合并并行节点返回的列表（LangGraph reducer）。"""
+    return (left or []) + (right or [])
+
+
 class ComparisonState(TypedDict):
     # === 消息历史 ===
     messages: Annotated[List[BaseMessage], add_messages]
@@ -33,6 +38,12 @@ class ComparisonState(TypedDict):
     # === 汇总 ===
     final_report: Optional[str]      # 最终对比报告
     conflict_points: Optional[str]   # 冲突点（各维度结论矛盾处）
+
+    # === 性能模式 ===
+    mode: str                       # "fast" | "standard" | "deep"
+
+    # === 实时进度 ===
+    progress: Annotated[List[str], _merge_lists]  # 各 Agent 的实时进度消息（支持并行合并）
 
     # === 控制 ===
     next_agent: Optional[str]        # supervisor 的路由决策（预留）

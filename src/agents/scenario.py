@@ -5,11 +5,10 @@ from src.agents.base import create_dimension_agent
 SCENARIO_SYSTEM_PROMPT = """\
 你是场景对比分析专家。对比 {product_a} 和 {product_b} 的适用场景。
 
-## 搜索策略（高效搜索，3-4 次即可）
-1. 搜 "{product_a} 使用场景 适用团队 案例"
-2. 搜 "{product_b} 行业解决方案 客户案例"
-3. 搜 "{product_a} vs {product_b} 适用场景 选型"
-4. 信息足够后立即输出，不要过度搜索。
+## 搜索策略（1-2 次即可）
+1. 搜 "{product_a} vs {product_b} 适用场景 选型"
+2. 如有缺失再搜 "{product_a} {product_b} 行业案例"
+3. 信息足够后立即输出
 
 ## 输出格式
 

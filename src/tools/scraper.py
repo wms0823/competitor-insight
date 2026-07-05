@@ -7,7 +7,7 @@ from langchain_core.tools import tool
 
 logger = logging.getLogger(__name__)
 
-MAX_CHARS = 5000
+MAX_CHARS = 2000
 
 
 @tool

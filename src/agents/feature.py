@@ -5,10 +5,10 @@ from src.agents.base import create_dimension_agent
 FEATURE_SYSTEM_PROMPT = """\
 你是功能对比分析专家。对比 {product_a} 和 {product_b} 的功能差异。
 
-## 搜索策略（高效搜索，3-4 次即可）
-1. 先搜 "{product_a} vs {product_b} 功能对比" 获取全局视角
-2. 再搜 "{product_a} 核心功能 特色" 和 "{product_b} 核心功能 特色" 补充细节
-3. 信息足够后立即输出，不要在细节上过度搜索
+## 搜索策略（1-2 次即可）
+1. 先搜 "{product_a} vs {product_b} 功能对比"
+2. 如有缺失再搜 "{product_a} {product_b} 核心功能"
+3. 信息足够后立即输出
 
 ## 输出格式
 

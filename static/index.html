@@ -6,49 +6,83 @@
     <title>竞品深度对比分析系统</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --border: #334155; --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8; --accent2: #818cf8; --green: #34d399; --red: #f87171; }
+        :root { --bg: #0f172a; --card: #1e293b; --border: #334155; --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8; --accent2: #818cf8; --green: #34d399; --yellow: #fbbf24; --red: #f87171; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-        .container { width: 100%; max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
-        h1 { font-size: 1.7rem; text-align: center; margin-bottom: .4rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .subtitle { text-align: center; color: var(--muted); margin-bottom: 1.8rem; font-size: .9rem; }
-        .badges { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.8rem; }
-        .badge { font-size: .72rem; padding: .22rem .6rem; border-radius: 20px; background: var(--card); border: 1px solid var(--border); color: var(--muted); }
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.8rem; margin-bottom: 1.2rem; }
+        .container { width: 100%; max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+        h1 { font-size: 1.6rem; text-align: center; margin-bottom: .3rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .subtitle { text-align: center; color: var(--muted); margin-bottom: 1.5rem; font-size: .85rem; }
+        .badges { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+        .badge { font-size: .7rem; padding: .2rem .55rem; border-radius: 20px; background: var(--card); border: 1px solid var(--border); color: var(--muted); }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
-        label { display: block; font-size: .82rem; color: var(--muted); margin-bottom: .3rem; font-weight: 500; }
-        input { width: 100%; padding: .7rem .9rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: .95rem; transition: border-color .2s; }
+        @media (max-width: 700px) { .form-row { grid-template-columns: 1fr; } }
+        label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: .25rem; font-weight: 500; }
+        input { width: 100%; padding: .65rem .85rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: .9rem; transition: border-color .2s; }
         input:focus { outline: none; border-color: var(--accent); }
-        button { width: 100%; padding: .8rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 8px; color: #0f172a; font-size: .95rem; font-weight: 600; cursor: pointer; transition: opacity .2s; }
+        button { width: 100%; padding: .75rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 8px; color: #0f172a; font-size: .9rem; font-weight: 600; cursor: pointer; transition: opacity .2s, transform .1s; }
         button:hover { opacity: .85; }
-        button:disabled { opacity: .4; cursor: not-allowed; }
-        .error { display: none; background: #7f1d1d; border: 1px solid #dc2626; color: #fca5a5; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
-        .error.show { display: block; }
-        .spinner { display: none; text-align: center; padding: 1.5rem; color: var(--muted); }
-        .spinner.show { display: block; }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-        .spinner .dot { animation: pulse 1.4s infinite; }
-        .spinner .dot:nth-child(2) { animation-delay: .2s; }
-        .spinner .dot:nth-child(3) { animation-delay: .4s; }
+        button:active { transform: scale(.98); }
+        button:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 
-        /* ── 报告渲染样式 ── */
+        /* ── 性能模式选择器 ── */
+        .mode-label { font-size: .8rem; color: var(--muted); margin-bottom: .4rem; }
+        .mode-row { display: flex; gap: .5rem; margin-bottom: 1.2rem; }
+        .mode-btn { flex: 1; padding: .55rem .4rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); cursor: pointer; text-align: center; transition: all .2s; font-size: .8rem; }
+        .mode-btn .mode-name { font-weight: 600; font-size: .85rem; }
+        .mode-btn .mode-desc { font-size: .68rem; color: var(--muted); margin-top: .15rem; }
+        .mode-btn.active { border-color: var(--accent); background: rgba(56,189,248,.08); color: var(--accent); }
+        .mode-btn.active .mode-desc { color: var(--accent); }
+        .mode-btn:hover:not(.active) { border-color: #475569; }
+
+        /* ── 进度面板 ── */
+        .progress-wrap { display: none; margin-bottom: 1rem; }
+        .progress-wrap.show { display: block; }
+        .progress-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.2rem; }
+        .progress-card .status-row { display: grid; grid-template-columns: repeat(4,1fr); gap: .5rem; margin-bottom: .6rem; }
+        @media (max-width: 600px) { .status-row { grid-template-columns: repeat(2,1fr); } }
+        .agent-status { text-align: center; padding: .5rem .3rem; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); font-size: .75rem; transition: all .3s; }
+        .agent-status .icon { font-size: 1.1rem; margin-bottom: .15rem; }
+        .agent-status .name { color: var(--muted); }
+        .agent-status .state { font-size: .7rem; margin-top: .15rem; }
+        .agent-status.pending { opacity: .4; }
+        .agent-status.running { border-color: var(--accent); box-shadow: 0 0 8px rgba(56,189,248,.15); }
+        .agent-status.running .icon { animation: bounce .6s infinite alternate; }
+        .agent-status.done { border-color: var(--green); }
+        .agent-status.done .name { color: var(--green); }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+        .log-list { max-height: 200px; overflow-y: auto; font-size: .75rem; color: var(--muted); }
+        .log-list .log-line { padding: .2rem 0; border-bottom: 1px solid rgba(255,255,255,.03); font-family: "SF Mono","Cascadia Code",monospace; font-size: .72rem; }
+        .log-list .log-line:last-child { border: none; }
+
+        /* ── 计时器 ── */
+        .timer { text-align: center; font-size: .8rem; color: var(--muted); padding: .5rem; }
+        .timer .elapsed { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        /* ── 报告 ── */
         .report-wrap { display: none; }
         .report-wrap.show { display: block; }
-        .report-body { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 2rem 2.2rem; line-height: 1.75; font-size: .9rem; }
-        .report-body h2 { font-size: 1.2rem; margin: 1.6em 0 .6em; padding-bottom: .4em; border-bottom: 1px solid var(--border); color: var(--accent); }
+        .report-body { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 2rem 2.2rem; line-height: 1.75; font-size: .88rem; }
+        .report-body h2 { font-size: 1.15rem; margin: 1.6em 0 .55em; padding-bottom: .35em; border-bottom: 1px solid var(--border); color: var(--accent); }
         .report-body h2:first-child { margin-top: 0; }
-        .report-body h3 { font-size: 1rem; margin: 1.2em 0 .4em; color: var(--text); }
-        .report-body p { margin: .6em 0; }
-        .report-body ul, .report-body ol { margin: .4em 0; padding-left: 1.5em; }
-        .report-body li { margin: .25em 0; }
-        .report-body table { width: 100%; border-collapse: collapse; margin: .8em 0 1.2em; font-size: .85rem; }
-        .report-body th, .report-body td { border: 1px solid var(--border); padding: .5rem .7rem; text-align: left; vertical-align: top; }
-        .report-body th { background: rgba(56,189,248,.08); font-weight: 600; color: var(--accent); white-space: nowrap; }
-        .report-body tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+        .report-body h3 { font-size: .95rem; margin: 1.1em 0 .35em; }
+        .report-body p { margin: .55em 0; }
+        .report-body ul, .report-body ol { margin: .35em 0; padding-left: 1.4em; }
+        .report-body li { margin: .2em 0; }
+        .report-body table { width: 100%; border-collapse: collapse; margin: .7em 0 1.1em; font-size: .82rem; }
+        .report-body th, .report-body td { border: 1px solid var(--border); padding: .45rem .65rem; text-align: left; vertical-align: top; }
+        .report-body th { background: rgba(56,189,248,.06); font-weight: 600; color: var(--accent); white-space: nowrap; }
+        .report-body tr:nth-child(even) td { background: rgba(255,255,255,.015); }
         .report-body strong { color: #fff; }
-        .report-body hr { border: none; border-top: 1px solid var(--border); margin: 1.2em 0; }
-        .report-body code { background: rgba(255,255,255,.06); padding: .15em .4em; border-radius: 4px; font-size: .88em; }
+        .report-body hr { border: none; border-top: 1px solid var(--border); margin: 1em 0; }
+        .report-body code { background: rgba(255,255,255,.05); padding: .12em .35em; border-radius: 4px; font-size: .85em; }
+
+        .error { display: none; background: #7f1d1d; border: 1px solid #dc2626; color: #fca5a5; padding: .85rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: .85rem; }
+        .error.show { display: block; }
+
+        /* 滚动条 */
+        .log-list::-webkit-scrollbar { width: 4px; }
+        .log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
     </style>
 </head>
 <body>
@@ -56,23 +90,55 @@
     <h1>竞品深度对比分析系统</h1>
     <p class="subtitle">LangGraph 多智能体架构 · 四维并行分析 · 冲突检测 · 决策建议</p>
     <div class="badges">
-        <span class="badge">功能对比</span><span class="badge">价格对比</span><span class="badge">口碑对比</span><span class="badge">场景对比</span><span class="badge">冲突检测</span>
+        <span class="badge">功能</span><span class="badge">价格</span><span class="badge">口碑</span><span class="badge">场景</span><span class="badge">冲突检测</span>
     </div>
 
+    <!-- 输入卡片 -->
     <div class="card">
         <div class="form-row">
             <div><label for="a">产品 A</label><input id="a" placeholder="例如：Notion" value="Notion"></div>
             <div><label for="b">产品 B</label><input id="b" placeholder="例如：飞书文档" value="飞书文档"></div>
         </div>
-        <div style="margin-bottom:1.4rem;"><label for="c">品类（可选）</label><input id="c" placeholder="例如：文档协作工具" value="文档协作工具"></div>
+        <div style="margin-bottom:1rem;"><label for="c">品类（可选）</label><input id="c" placeholder="例如：文档协作工具" value="文档协作工具"></div>
+
+        <!-- 性能模式选择器 -->
+        <label class="mode-label">分析深度</label>
+        <div class="mode-row" id="modeRow">
+            <div class="mode-btn active" data-mode="fast" onclick="selectMode('fast',this)">
+                <div class="mode-name">⚡ 快速</div>
+                <div class="mode-desc">1轮搜索 · ~20秒</div>
+            </div>
+            <div class="mode-btn" data-mode="standard" onclick="selectMode('standard',this)">
+                <div class="mode-name">🎯 标准</div>
+                <div class="mode-desc">2轮搜索 · ~35秒</div>
+            </div>
+            <div class="mode-btn" data-mode="deep" onclick="selectMode('deep',this)">
+                <div class="mode-name">🔬 深度</div>
+                <div class="mode-desc">3轮搜索+抓取 · ~55秒</div>
+            </div>
+        </div>
+
         <button id="btn" onclick="run()">开始对比分析</button>
     </div>
 
+    <!-- 错误 -->
     <div id="err" class="error"></div>
-    <div id="spin" class="spinner">
-        四个专业 Agent 并行分析中<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
-        <br><small style="color:var(--muted)">功能 · 价格 · 口碑 · 场景 → 交叉验证 → 生成报告</small>
+
+    <!-- 进度面板 -->
+    <div id="progWrap" class="progress-wrap">
+        <div class="progress-card">
+            <div class="status-row" id="statusRow">
+                <div class="agent-status pending" id="st-feature"><div class="icon">🔍</div><div class="name">功能对比</div><div class="state">等待中</div></div>
+                <div class="agent-status pending" id="st-pricing"><div class="icon">💰</div><div class="name">价格对比</div><div class="state">等待中</div></div>
+                <div class="agent-status pending" id="st-sentiment"><div class="icon">💬</div><div class="name">口碑对比</div><div class="state">等待中</div></div>
+                <div class="agent-status pending" id="st-scenario"><div class="icon">🎯</div><div class="name">场景对比</div><div class="state">等待中</div></div>
+            </div>
+            <div class="timer" id="timer">⏱ <span class="elapsed" id="elapsed">0.0s</span></div>
+            <div class="log-list" id="logList"></div>
+        </div>
     </div>
+
+    <!-- 报告 -->
     <div id="wrap" class="report-wrap">
         <div id="report" class="report-body"></div>
     </div>
@@ -81,42 +147,154 @@
 <script>
 marked.setOptions({ breaks: false, gfm: true });
 
+var currentMode = 'fast';
+var timerInterval = null;
+var agentNames = ['feature','pricing','sentiment','scenario'];
+var agentIcons = { feature:'🔍', pricing:'💰', sentiment:'💬', scenario:'🎯' };
+
+function selectMode(mode, el) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.remove('active'); });
+    el.classList.add('active');
+}
+
+function setAgentState(agent, state) {
+    var el = document.getElementById('st-' + agent);
+    if (!el) return;
+    el.className = 'agent-status ' + state;
+    var stateEl = el.querySelector('.state');
+    var labels = { pending:'等待中', running:'分析中…', done:'✓ 完成' };
+    if (stateEl) stateEl.textContent = labels[state] || state;
+}
+
+function addLog(msg) {
+    var list = document.getElementById('logList');
+    var div = document.createElement('div');
+    div.className = 'log-line';
+    div.textContent = msg;
+    list.appendChild(div);
+    list.scrollTop = list.scrollHeight;
+}
+
+function startTimer() {
+    var start = Date.now();
+    var el = document.getElementById('elapsed');
+    timerInterval = setInterval(function(){
+        el.textContent = ((Date.now() - start) / 1000).toFixed(1) + 's';
+    }, 100);
+}
+
+function stopTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
 async function run() {
     var btn = document.getElementById('btn');
     var errEl = document.getElementById('err');
-    var spin = document.getElementById('spin');
     var wrap = document.getElementById('wrap');
     var rep = document.getElementById('report');
+    var progWrap = document.getElementById('progWrap');
+    var logList = document.getElementById('logList');
+    var elapsed = document.getElementById('elapsed');
 
+    // 重置
     errEl.classList.remove('show'); errEl.textContent = '';
     wrap.classList.remove('show'); rep.innerHTML = '';
+    logList.innerHTML = '';
+    elapsed.textContent = '0.0s';
+    stopTimer();
+
+    agentNames.forEach(function(ag){ setAgentState(ag, 'pending'); });
+    progWrap.classList.add('show');
 
     var a = document.getElementById('a').value.trim();
     var b = document.getElementById('b').value.trim();
     var c = document.getElementById('c').value.trim() || '通用';
+    if (!a || !b) { errEl.textContent = '请填写两个产品名称'; errEl.classList.add('show'); progWrap.classList.remove('show'); return; }
 
-    if (!a || !b) { errEl.textContent = '请填写两个产品名称'; errEl.classList.add('show'); return; }
-
-    btn.disabled = true; btn.textContent = '分析中...'; spin.classList.add('show');
+    btn.disabled = true; btn.textContent = '分析中...';
+    startTimer();
 
     try {
-        var resp = await fetch('/compare', {
+        var resp = await fetch('/compare/stream', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ product_a: a, product_b: b, category: c })
+            body: JSON.stringify({ product_a: a, product_b: b, category: c, mode: currentMode })
         });
-        var data = await resp.json();
-        if (!resp.ok) throw new Error(data.detail || 'HTTP ' + resp.status);
-        spin.classList.remove('show');
-        rep.innerHTML = marked.parse(data.report || '分析完成，但未生成报告内容。');
-        wrap.classList.add('show');
+
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+        var reader = resp.body.getReader();
+        var decoder = new TextDecoder();
+        var buffer = '';
+
+        while (true) {
+            var result = await reader.read();
+            if (result.done) break;
+            buffer += decoder.decode(result.value, { stream: true });
+
+            var lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            var eventType = '';
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i];
+                if (line.startsWith('event: ')) {
+                    eventType = line.slice(7).trim();
+                } else if (line.startsWith('data: ') && eventType) {
+                    try {
+                        var data = JSON.parse(line.slice(6));
+                        handleEvent(eventType, data);
+                    } catch(e) {}
+                    eventType = '';
+                }
+            }
+        }
     } catch (e) {
-        spin.classList.remove('show');
-        errEl.textContent = '请求失败: ' + e.message;
+        errEl.textContent = '连接中断: ' + e.message;
         errEl.classList.add('show');
     } finally {
+        stopTimer();
         btn.disabled = false;
         btn.textContent = '开始对比分析';
+        // 标记所有未完成 agent 为完成
+        agentNames.forEach(function(ag){
+            var el = document.getElementById('st-' + ag);
+            if (el && el.classList.contains('running')) setAgentState(ag, 'done');
+        });
+    }
+}
+
+function handleEvent(eventType, data) {
+    switch (eventType) {
+        case 'connected':
+            addLog('已连接 · 模式: ' + (data.mode || 'standard') + ' · ID: ' + (data.thread_id||'').slice(-12));
+            break;
+        case 'progress':
+            addLog(data.message || '');
+            // 从消息中提取 agent 状态
+            agentNames.forEach(function(ag){
+                if (data.message && data.message.indexOf({feature:'功能',pricing:'价格',sentiment:'口碑',scenario:'场景'}[ag]) !== -1) {
+                    if (data.message.indexOf('开始') !== -1) setAgentState(ag, 'running');
+                    if (data.message.indexOf('完成') !== -1) setAgentState(ag, 'done');
+                }
+            });
+            break;
+        case 'agent_done':
+            if (data.agent) setAgentState(data.agent, 'done');
+            break;
+        case 'report':
+            if (data.report) {
+                document.getElementById('report').innerHTML = marked.parse(data.report);
+                document.getElementById('wrap').classList.add('show');
+            }
+            break;
+        case 'error':
+            addLog('❌ 错误: ' + (data.message || ''));
+            break;
+        case 'done':
+            addLog('✅ 分析完成');
+            break;
     }
 }
 </script>

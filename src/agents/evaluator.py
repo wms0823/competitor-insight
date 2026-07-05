@@ -122,12 +122,16 @@ def evaluator_agent(state: ComparisonState) -> dict:
     metrics = AgentMetrics()
     metrics.start()
 
+    progress = list(state.get("progress", []))
+    progress.append("🧠 综合评审：正在交叉验证四个维度...")
     logger.info("Evaluator 开始综合评审...")
+
     resp = llm.invoke([SystemMessage(content=prompt)])
     metrics.record_llm_call()
     report = resp.content.replace("\r\n", "\n").strip()
     metrics.stop()
 
+    progress.append("📋 报告生成完毕")
     logger.info(
         "Evaluator 评审完成 — %d 字 | %d ms",
         len(report), metrics.elapsed_ms,
@@ -140,4 +144,5 @@ def evaluator_agent(state: ComparisonState) -> dict:
         "final_report": report,
         "conflict_points": "",
         "agent_metrics": existing,
+        "progress": progress,
     }

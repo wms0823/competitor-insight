@@ -5,10 +5,10 @@ from src.agents.base import create_dimension_agent
 PRICING_SYSTEM_PROMPT = """\
 你是价格对比分析专家。对比 {product_a} 和 {product_b} 的定价体系。
 
-## 搜索策略（高效搜索，3-4 次即可）
-1. 先搜 "{product_a} 价格 定价 套餐" 和 "{product_b} 价格 定价 套餐"
-2. 再搜 "{product_a} vs {product_b} 价格对比 性价比"
-3. 如果找到官方定价页，可抓取确认。信息足够后立即输出。
+## 搜索策略（1-2 次即可）
+1. 先搜 "{product_a} vs {product_b} 价格对比 定价"
+2. 如有缺失再搜 "{product_a} {product_b} 套餐价格"
+3. 信息足够后立即输出
 
 ## 输出格式
 
