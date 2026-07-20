@@ -72,3 +72,7 @@ if settings.langsmith_api_key:
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGCHAIN_API_KEY"] = settings.langsmith_api_key
     os.environ["LANGCHAIN_PROJECT"] = "competitor-insight"
+
+# 注入环境变量，供 TavilySearchResults 等第三方工具使用
+if settings.tavily_api_key:
+    os.environ["TAVILY_API_KEY"] = settings.tavily_api_key
