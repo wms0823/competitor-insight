@@ -58,7 +58,10 @@ async def compare(req: CompareRequest):
 # ── SSE 流式接口（实时进度推送） ──
 
 async def _stream_compare(product_a: str, product_b: str, category: str, mode: str):
-    """SSE 事件生成器：用 astream 实时推送每个节点的执行进度。"""
+    """SSE 事件生成器：用 stream（同步）实时推送每个节点的执行进度。
+
+    注意：使用同步 stream 而非 astream，因为 MemorySaver 不支持异步 aget_tuple。
+    """
     thread_id = f"cmp_{product_a[:10]}_vs_{product_b[:10]}_{uuid.uuid4().hex[:6]}"
     config = {"configurable": {"thread_id": thread_id}}
     app = build_graph(settings.database_url)
@@ -76,7 +79,7 @@ async def _stream_compare(product_a: str, product_b: str, category: str, mode: s
     yield _sse("connected", {"thread_id": thread_id, "mode": mode})
 
     try:
-        async for chunk in app.astream(state, config):
+        for chunk in app.stream(state, config):
             node_name = next(iter(chunk.keys()), None) if chunk else None
             node_state = chunk.get(node_name, {}) if node_name else {}
 
