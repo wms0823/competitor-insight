@@ -1,5 +1,6 @@
 import json
 import logging
+import traceback
 import uuid
 
 from fastapi import APIRouter
@@ -99,7 +100,7 @@ async def _stream_compare(product_a: str, product_b: str, category: str, mode: s
         yield _sse("done", {"thread_id": thread_id})
 
     except Exception as exc:
-        logger.error("SSE 流异常: %s", exc)
+        logger.error("SSE 流异常: %s\n%s", exc, traceback.format_exc())
         yield _sse("error", {"message": str(exc)[:500]})
 
 

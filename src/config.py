@@ -72,6 +72,10 @@ if settings.langsmith_api_key:
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGCHAIN_API_KEY"] = settings.langsmith_api_key
     os.environ["LANGCHAIN_PROJECT"] = "competitor-insight"
+else:
+    # 显式禁用 LangSmith，避免 langchain 自动连接导致 403 错误
+    os.environ["LANGCHAIN_TRACING_V2"] = "false"
+    os.environ["LANGSMITH_API_KEY"] = ""
 
 # 注入环境变量，供 TavilySearchResults 等第三方工具使用
 if settings.tavily_api_key:
