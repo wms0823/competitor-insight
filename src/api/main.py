@@ -27,7 +27,18 @@ app.include_router(router)
 @app.get("/", tags=["页面"])
 async def index():
     """返回竞品对比分析系统首页"""
-    return FileResponse(str(static_dir / "index.html"))
+    index_path = static_dir / "index.html"
+    if not index_path.exists():
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse(
+            "<html><body style='background:#0f172a;color:#e2e8f0;font-family:sans-serif;"
+            "display:flex;align-items:center;justify-content:center;height:100vh'>"
+            "<div style='text-align:center'><h1>竞品深度对比分析系统</h1>"
+            "<p>服务运行中。请通过 API 访问。</p>"
+            "<p style='color:#94a3b8'>POST /compare | POST /compare/stream | GET /health</p></div>"
+            "</body></html>"
+        )
+    return FileResponse(str(index_path))
 
 
 @app.get("/health", tags=["系统"])
